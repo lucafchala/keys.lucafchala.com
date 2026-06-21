@@ -1,0 +1,5 @@
+# robots.txt — keys.lucafchala.com
+# Open access: public PGP keys. All crawlers and AI agents are welcome.
+
+User-agent: *
+Allow: /
