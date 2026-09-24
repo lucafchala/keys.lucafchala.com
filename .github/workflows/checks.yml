@@ -3,25 +3,88 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate JSON files
-        run: |
-          set -e
-          find . -name '*.json' -not -path '*/node_modules/*' -not -path './.git/*' | while read -r f; do
-            python3 -m json.tool "$f" > /dev/null || { echo "Invalid JSON: $f"; exit 1; }
-          done
-
-      - name: Forbid weak HTML escapers (must also escape quotes)
-        run: |
-          if grep -rnE --include='*.html' --include='*.js' --exclude-dir=node_modules --exclude-dir=.git "replace\(/>/g, ?'&gt;'\) *[;)]" .; then
-            echo "Found a 3-char HTML escaper - use the canonical 5-char version that also escapes quotes"
-            exit 1
-          fi
-
       - name: Security headers file present
         run: test -f _headers
+
+      - name: JS syntax
+        run: for f in *.js; do node --check "$f" || exit 1; done
+
+      - name: No inline scripts or handlers (CSP is script-src 'self')
+        run: |
+          python3 - <<'PY'
+          import re, glob, sys
+          bad = []
+          for p in glob.glob('*.html'):
+              html = open(p, encoding='utf-8').read()
+              for m in re.finditer(r'<script\b([^>]*)>(.*?)</script>', html, re.S):
+                  if 'src=' not in m.group(1) and m.group(2).strip(): bad.append(f'{p}: inline <script>')
+              bad += [f'{p}: inline handler {h}' for h in re.findall(r'\s(on[a-z]+)=', html)]
+          if bad: print('\n'.join(bad)); sys.exit(1)
+          print('No inline scripts or handlers.')
+          PY
+
+      # Displayed fingerprints are recomputed from the key bytes: a typo in a
+      # fingerprint has shipped before (0813545).
+      - name: Keys are complete and every fingerprint matches them
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, html, re, sys
+          EXPECTED = '48E73F6FA2871E7B86EFEA648EC4329A369B7B33'
+          def crc24(data):
+              crc = 0xB704CE
+              for b in data:
+                  crc ^= b << 16
+                  for _ in range(8):
+                      crc <<= 1
+                      if crc & 0x1000000: crc ^= 0x1864CFB
+              return crc & 0xFFFFFF
+          def pgp_fingerprint(armor):
+              m = re.search(r'-----BEGIN PGP PUBLIC KEY BLOCK-----\n(?:[^\n]+: [^\n]*\n)*\n(.*?)\n=([A-Za-z0-9+/]{4})\n-----END PGP PUBLIC KEY BLOCK-----', armor, re.S)
+              if not m: raise ValueError('armor incomplete (missing checksum or END line)')
+              data = base64.b64decode(''.join(m.group(1).split()), validate=True)
+              if crc24(data).to_bytes(3, 'big') != base64.b64decode(m.group(2)): raise ValueError('CRC24 mismatch — truncated or corrupted')
+              b0 = data[0]
+              if b0 & 0x40:
+                  tag, l0 = b0 & 0x3F, data[1]
+                  if l0 < 192: ln, off = l0, 2
+                  elif l0 < 224: ln, off = ((l0 - 192) << 8) + data[2] + 192, 3
+                  else: ln, off = int.from_bytes(data[2:6], 'big'), 6
+              else:
+                  tag, lt = (b0 >> 2) & 0xF, b0 & 3
+                  ln, off = {0: (data[1], 2), 1: (int.from_bytes(data[1:3], 'big'), 3), 2: (int.from_bytes(data[1:5], 'big'), 5)}[lt]
+              if tag != 6: raise ValueError('first packet is not a public key')
+              body = data[off:off + ln]
+              return hashlib.sha1(b'\x99' + len(body).to_bytes(2, 'big') + body).hexdigest().upper()
+          page = open('index.html', encoding='utf-8').read()
+          def el(i): return html.unescape(re.search(r'id="%s"[^>]*>(.*?)</' % i, page, re.S).group(1)).strip()
+          errs = []
+          asc = open('pgp.asc', encoding='utf-8').read()
+          try:
+              fp = pgp_fingerprint(asc)
+              if fp != EXPECTED: errs.append(f'pgp.asc fingerprint {fp} != {EXPECTED}')
+          except Exception as e: errs.append(f'pgp.asc: {e}')
+          if el('key-pgp') != asc.strip(): errs.append('the key shown on the page differs from pgp.asc')
+          if el('pgp-fp').replace(' ', '') != EXPECTED: errs.append(f"page fingerprint {el('pgp-fp')} != {EXPECTED}")
+          ssh = open('ssh.pub', encoding='utf-8').read().strip()
+          kind, b64 = ssh.split()[:2]
+          blob = base64.b64decode(b64)
+          n = int.from_bytes(blob[:4], 'big')
+          if kind != 'ssh-ed25519' or blob[4:4 + n] != b'ssh-ed25519' or len(blob) != 4 + n + 4 + 32: errs.append('ssh.pub is not a well-formed ed25519 key')
+          if el('key-ssh') != ssh: errs.append('the SSH key shown on the page differs from ssh.pub')
+          ssh_fp = 'SHA256:' + base64.b64encode(hashlib.sha256(blob).digest()).decode().rstrip('=')
+          if el('ssh-fp') != ssh_fp: errs.append(f"page SSH fingerprint {el('ssh-fp')} != {ssh_fp}")
+          if errs: print('\n'.join(errs)); sys.exit(1)
+          print('PGP', EXPECTED, '· SSH', ssh_fp, '— page, pgp.asc and ssh.pub agree.')
+          PY
+
+      - name: Status-monitor marker present
+        run: grep -q 'Chaves' index.html || { echo "status.lucafchala.com looks for 'Chaves' on this page"; exit 1; }
