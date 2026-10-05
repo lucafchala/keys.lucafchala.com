@@ -18,7 +18,7 @@ jobs:
       - name: JS syntax
         run: for f in *.js; do node --check "$f" || exit 1; done
 
-      - name: No inline scripts or handlers (CSP is script-src 'self')
+      - name: No inline scripts or handlers (CSP is script-src 'self'; JSON-LD data blocks are not executed)
         run: |
           python3 - <<'PY'
           import re, glob, sys
@@ -26,7 +26,7 @@ jobs:
           for p in glob.glob('*.html'):
               html = open(p, encoding='utf-8').read()
               for m in re.finditer(r'<script\b([^>]*)>(.*?)</script>', html, re.S):
-                  if 'src=' not in m.group(1) and m.group(2).strip(): bad.append(f'{p}: inline <script>')
+                  if 'src=' not in m.group(1) and 'application/ld+json' not in m.group(1) and m.group(2).strip(): bad.append(f'{p}: inline <script>')
               bad += [f'{p}: inline handler {h}' for h in re.findall(r'\s(on[a-z]+)=', html)]
           if bad: print('\n'.join(bad)); sys.exit(1)
           print('No inline scripts or handlers.')

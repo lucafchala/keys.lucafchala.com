@@ -26,4 +26,4 @@
 
 # Agent/crawler discovery hints (RFC 8288).
 /
-  Link: <https://keys.lucafchala.com/>; rel="canonical", </pgp.asc>; rel="alternate"; type="application/pgp-keys", <https://proof.lucafchala.com/>; rel="me", <https://lucafchala.com/>; rel="author"
+  Link: <https://keys.lucafchala.com/>; rel="canonical", </pgp.asc>; rel="alternate"; type="application/pgp-keys", <https://proof.lucafchala.com/>; rel="me", <https://lucafchala.com/>; rel="author", </sitemap.xml>; rel="sitemap"
