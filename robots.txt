@@ -3,3 +3,5 @@
 
 User-agent: *
 Allow: /
+
+Sitemap: https://keys.lucafchala.com/sitemap.xml
