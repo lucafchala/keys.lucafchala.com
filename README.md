@@ -44,7 +44,7 @@ The signed statement tying these keys to Luca's accounts and domains is at [proo
 | `theme.js` | Theme + language bootstrap shared with the ecosystem (`lf_theme` / `lf_lang` cookies) |
 | `icon.svg` | Site icon (a key) |
 | `_headers` | CSP (`script-src 'self'`, `font-src 'self'`), HSTS, COOP/CORP, content types and CORS for the raw keys, `Link` hints |
-| `fonts/` | Self-hosted Cormorant Garamond + JetBrains Mono (OFL) |
+| `fonts/` | Self-hosted Inter + JetBrains Mono (OFL) |
 
 The page is PT-BR by default, with an EN toggle; the status monitor looks for the word `Chaves`.
 
