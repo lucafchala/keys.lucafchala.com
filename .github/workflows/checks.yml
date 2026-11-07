@@ -88,3 +88,9 @@ jobs:
 
       - name: Status-monitor marker present
         run: grep -q 'Chaves' index.html || { echo "status.lucafchala.com looks for 'Chaves' on this page"; exit 1; }
+
+      # Aviso de lançamento de álbum do fotos, posto pelo servidor (functions/).
+      - name: Album launch notice (functions syntax + tests)
+        run: |
+          for f in functions/*.js functions/_lib/*.js; do node --check "$f" || exit 1; done
+          node --test tests/destaque.test.mjs

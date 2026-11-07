@@ -1,0 +1,16 @@
+/* Aviso de lançamento de álbum do fotos (posto pelo servidor: functions/_middleware.js
+   ou _worker.js). Cópia igual nos sites que usam a versão sem script; ver o
+   docs/ALBUM.md do fotos. Cores fixas do Colégio Santa Cruz, nos dois temas:
+   branco 11,1:1, amarelo 8,2:1 e o × 6,9:1 sobre #243580. Nestes sites a
+   página é uma coluna central, e a faixa entra nela como um cartão. */
+.lfc-dq-chk { position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; opacity: 0; overflow: hidden; }
+.lfc-dq { position: relative; display: block; margin: 0 0 20px; border-radius: 12px; background: #243580; color: #fff; font: 14px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; text-align: center; }
+.lfc-dq-chk:checked + .lfc-dq { display: none; }
+.lfc-dq-a { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 12px; min-height: 44px; padding: 8px 52px 8px 16px; box-sizing: border-box; color: #fff; text-decoration: none; }
+.lfc-dq-k { font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: #f9de4b; }
+.lfc-dq-a b { font-weight: 700; color: #fff; }
+.lfc-dq-c { font-weight: 600; color: #f9de4b; white-space: nowrap; }
+.lfc-dq-a:hover .lfc-dq-c { text-decoration: underline; }
+.lfc-dq-x { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; margin: 0; color: #c5cbe6; font-size: 20px; line-height: 1; cursor: pointer; }
+.lfc-dq-a:focus-visible, .lfc-dq-chk:focus-visible + .lfc-dq .lfc-dq-x { outline: 2px solid #f9de4b; outline-offset: -4px; }
+@media print { .lfc-dq, .lfc-dq-chk { display: none !important; } }
